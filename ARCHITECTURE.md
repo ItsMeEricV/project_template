@@ -46,3 +46,26 @@ graph TD
 
 Describe how services interact.
 - **Example:** "The Mobile app consumes the same GraphQL endpoint as the Web app. No direct DB access for clients."
+
+## Production Deployment Checklist
+
+_Purpose: Ensure nothing is missed when deploying to production. Add this section once your architecture is defined._
+
+### Environment Variables
+
+Document every required env var with its purpose and how to obtain it. Make sure your `.env` files are secured for agentic work prior to deploying to production. Consider tools like [VestAuth](https://github.com/vestauth/vestauth) or similar secrets management solutions to prevent AI agents from accidentally leaking credentials.
+
+| Key | Description | How to Obtain |
+|-----|-------------|---------------|
+| `DATABASE_URL` | Production PostgreSQL connection string | Provision a managed Postgres instance |
+| `AUTH_SECRET` | Token signing secret | `openssl rand -hex 32` |
+
+### Infrastructure Steps
+
+- [ ] Custom domain configuration
+- [ ] Database migration (e.g., `prisma migrate deploy` or equivalent)
+- [ ] OAuth credentials with production redirect URIs
+- [ ] Secrets management (never use plaintext `.env` in production)
+- [ ] Monitoring and error tracking setup
+- [ ] Automated database backups
+- [ ] CORS configuration for production origins

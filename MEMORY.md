@@ -5,21 +5,35 @@ This file is the "journal" of the project and is **always AI-maintained**. It is
 ## Purpose
 This document captures the non-obvious: bugs, quirks, gotchas, and patterns discovered during development. It exists to prevent the AI from repeating mistakes, struggling with known environment issues, or violating established project conventions.
 
+## Structure
+
+Organize memories by category. Each entry should be a short summary linking to a dedicated file (if using Claude Code's auto-memory) or an inline entry if maintaining manually.
+
 ---
 
 ## Project Context & Quirks
 
-- **Naming Convention:** The project has transitioned from `camelCase` to `snake_case` for all file names and database fields. Ensure all new contributions adhere to `snake_case`.
-- **Database Access:** The staging database is not directly accessible. It requires a specific SSH tunnel to be established before running any migrations or seeding scripts.
+_Record environment-specific discoveries, naming conventions, and infrastructure gotchas here._
+
+- **Example:** The staging database requires an SSH tunnel on port `5433` before running migrations.
 
 ---
 
 ## Lessons Learned & Edge Cases
 
-### Prisma / Database
-- **Prisma Edge Case (Fixed):** Encountered a weird edge case where composite unique constraints on optional fields were not being correctly handled during `upsert` operations. 
-    - **Discovery:** Prisma would fail to find the record if one of the optional fields in the unique constraint was `null`.
-    - **Solution:** Always explicitly check for the record existence or ensure that fields used in unique constraints are either required or handled with a fallback value during the application layer logic.
+_Record "I struggled" moments, surprising API behavior, and non-obvious solutions here._
 
-### Infrastructure & Environment
-- **SSH Tunneling:** When connecting to the staging environment, use the internal bastion host. Standard connection strings will fail with a timeout if the tunnel is not active on port `5433`.
+### Database / ORM
+- **Example:** Composite unique constraints on optional fields may fail during upsert when a field is `null`. Always check for existence explicitly or ensure constraint fields are required.
+
+### Infrastructure
+- **Example:** `docker compose restart` does NOT re-read `env_file`. Must use `docker compose up -d` to pick up new env vars.
+
+---
+
+## User Preferences & Feedback
+
+_Record corrections, confirmed approaches, and collaboration preferences here._
+
+- **Example:** User prefers bundled PRs for refactors rather than many small ones.
+- **Example:** User wants terse responses with no trailing summaries.

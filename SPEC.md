@@ -35,6 +35,8 @@ Summarize the problem we wish to solve in a few bullet points. Then give an over
 1. All APIs should target a p90 latency of 100 milliseconds.
 2. All PII (Personally Identifiable Information) must be encrypted at rest using AES-256.
 3. The system must support 500 concurrent WebSocket connections.
+4. Carefully design the uniqueness of primary keys. If using a UUID scheme, consider the latest methods like UUIDv7 (time-sortable, better index performance).
+5. If storing datetime information, default to high-fidelity data types that store both time and timezone information (e.g., `timestamptz` for PostgreSQL).
 
 ### Examples of Bad Requirements
 1. Don't use too much memory. (Vague)
