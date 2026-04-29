@@ -111,6 +111,10 @@ _Note: If your project uses a monorepo or subdirectory structure, ensure you run
 
 - **Naming:** All test files must follow the `.test.ts` suffix. Never use `.spec.ts`.
 - **Coverage:** Ensure logic-heavy modules and high-traffic routes are covered by unit/integration tests.
+- **No `setTimeout` / `sleep` for async waits in tests.** Use the framework's async primitives (React Testing Library's `waitFor` / `findBy*`, Playwright's auto-waiting locators, `pytest-asyncio`). Hand-rolled timers are flaky and hide real race conditions.
+- **Boundary mocking over internal mocking.** Mock at the network or storage boundary (HTTP client, database driver), not at the internal-function layer. Tests that mock private methods break on every refactor and validate implementation, not behavior.
+- **E2E selectors via `data-testid`, not DOM traversal or `.first()`.** Stable test IDs survive markup refactors; chained CSS selectors and positional access do not. Add `data-testid` at component boundaries during development, not retroactively.
+- **Split pure logic from DB / IO-importing modules.** Functions that import an ORM, an HTTP client, or a filesystem helper drag those imports into every test that touches them, slowing the suite and forcing brittle mocks. Keep validation, transformation, and policy logic in pure modules; have the IO-shaped layer call into them.
 
 ### Docker Development
 
