@@ -76,6 +76,20 @@ _Purpose: Define specific roles to prevent 'context bleed' (e.g., a frontend age
 
 - **No fake migration bookkeeping.** When applying schema changes outside your ORM's migration runner (e.g. raw SQL via a one-off CLI command, hot-fixing production), reproduce the runner's bookkeeping faithfully. Most ORMs verify a content checksum on every subsequent migrate run; placeholder values like `'manual-apply'` will pass on insert and then trigger silent drift-detection failures forever after. Compute the real digest (typically SHA-256 of the file contents) and write it to the metadata table the runner owns.
 
+### Frontend & SSR
+
+- **Hydration mismatches: defer non-deterministic client renders.** Libraries that generate IDs on the server (drag-and-drop primitives, accordion / dropdown / dialog components built on `useId`, anything random or time-based) produce hydration mismatches because the SSR-generated value differs from the client-generated one. When rendering these inside a `'use client'` component that is also server-rendered, gate them behind a `mounted` flag.
+
+  ```tsx
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted ? <DndContext>...</DndContext> : null;
+  ```
+
+  Same pattern applies to anything else with non-deterministic output: random IDs, locale-formatted dates, `time-since-now` strings.
+
+- **Client-side observability gates must read framework public-prefix env vars.** A Sentry / PostHog / log-collector `enabled` flag that reads `process.env.SENTRY_DSN` will silently disable in every browser because non-public env vars aren't bundled to the client. Use the framework's public-prefix convention: `NEXT_PUBLIC_*` (Next.js), `VITE_*` (Vite), `REACT_APP_*` (CRA), `PUBLIC_*` (Astro / SvelteKit).
+
 ### Pre-Commit Checks
 
 Before committing any changes, run these checks in order and fix any failures:
