@@ -69,3 +69,18 @@ Document every required env var with its purpose and how to obtain it. Make sure
 - [ ] Monitoring and error tracking setup
 - [ ] Automated database backups
 - [ ] CORS configuration for production origins
+
+## Observability
+
+Set up observability before you need it. Bare `console.log` / `print` is not enough at production scale.
+
+- **Request tracing.** Every inbound request gets a unique opaque ID at ingress. Propagate it through the call graph via the language's context primitive (Node.js: `AsyncLocalStorage`; Python: `contextvars`; Go: `context.Context`). Every log line, every outbound HTTP call, and every queue message carries the ID. This lets you stitch a user-visible failure back through every service it touched.
+- **Structured logs over freeform strings.** Log JSON fields the collector can index (`{userId, route, durationMs, ok}`), not concatenated sentences. Treat every logged field as searchable and publicly visible — never put PII or secrets in a log line.
+
+## Infrastructure-as-Code
+
+A few rules that prevent the most painful IaC foot-guns:
+
+- **Read secrets from a parameter store at apply time, not from CLI flags or `TF_VAR_*` env vars.** Terraform / Pulumi / OpenTofu data sources can pull from AWS SSM, GCP Secret Manager, or Vault directly. If the parameter is missing, the plan crashes loudly — much better than silently writing an empty string into a Lambda env var when you forget a `-var=` flag.
+- **Never default a secret-typed variable to `""` in code.** An empty default plus a forgotten override equals a deployed function with empty credentials and no failure signal at apply time.
+- **Isolate environments via workspaces (separate state files), not git branches.** Each environment has its own state tracking its own resources. Always verify the active workspace and `*.tfvars` file match before any `apply` — mismatching them destroys the wrong environment's resources.
