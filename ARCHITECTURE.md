@@ -60,6 +60,8 @@ Document every required env var with its purpose and how to obtain it. Make sure
 | `DATABASE_URL` | Production PostgreSQL connection string | Provision a managed Postgres instance |
 | `AUTH_SECRET` | Token signing secret | `openssl rand -hex 32` |
 
+**Client-side env vars need a framework public-prefix.** Bundlers strip non-public env vars from client bundles for security, so a Sentry / PostHog / log-collector `enabled` flag that reads `process.env.SENTRY_DSN` from a `'use client'` component (or any browser-bundled module) silently disables in every browser. Use the framework's public-prefix convention: `NEXT_PUBLIC_*` (Next.js), `VITE_*` (Vite), `REACT_APP_*` (CRA), `PUBLIC_*` (Astro / SvelteKit). When the same flag must read on both runtimes, define both (`SENTRY_DSN` for the server, `NEXT_PUBLIC_SENTRY_DSN` for the client) and document the pair.
+
 ### Infrastructure Steps
 
 - [ ] Custom domain configuration

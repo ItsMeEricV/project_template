@@ -90,8 +90,6 @@ _Purpose: Define specific roles to prevent 'context bleed' (e.g., a frontend age
 
   Same pattern applies to anything else with non-deterministic output: random IDs, locale-formatted dates, `time-since-now` strings.
 
-- **Client-side observability gates must read framework public-prefix env vars.** A Sentry / PostHog / log-collector `enabled` flag that reads `process.env.SENTRY_DSN` will silently disable in every browser because non-public env vars aren't bundled to the client. Use the framework's public-prefix convention: `NEXT_PUBLIC_*` (Next.js), `VITE_*` (Vite), `REACT_APP_*` (CRA), `PUBLIC_*` (Astro / SvelteKit).
-
 ### Pre-Commit Checks
 
 Before committing any changes, run these checks in order and fix any failures:
