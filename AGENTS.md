@@ -52,6 +52,19 @@ _Purpose: Define specific roles to prevent 'context bleed' (e.g., a frontend age
 - **Result Types over Exceptions:** Use a Result type library (e.g., `neverthrow`) to represent operations that can fail. Reserve `try/catch` only for truly exceptional, unrecoverable situations or at system boundaries (e.g., Server Actions that must throw to communicate errors to the framework runtime).
 - **No Implicit Fallbacks:** Never silently fall back to session/context data in Server Actions. All identity-related fields (like `userId`, `instructorId`) must be explicitly passed by the caller. This keeps data flow explicit and prevents subtle ownership bugs.
 
+### Database & Migrations
+
+- **Default to UUIDv7 for UUID primary keys.** UUIDv7 embeds a millisecond timestamp prefix, so inserts cluster to the right edge of the B-tree — the same locality property that makes serial integer keys cheap, without giving up global uniqueness. Reach for UUIDv4 only when unguessability dominates and you accept the index-locality cost.
+
+  - **Good (Postgres + ORM):** `id String @id @default(uuid(7))`
+  - **Bad:** `id String @id @default(uuid())` — random v4 scatters inserts across the B-tree, inflating index size and write amplification on hot tables.
+
+- **DateTime columns: prefix with `date` and a past-tense verb.** New columns and new tables should use `dateCreated`, `dateUpdated`, `dateDelivered`, `dateReminderSent`. The verb makes the column self-documenting. Existing `createdAt` / `updatedAt` columns on legacy tables are grandfathered — leave them alone unless you're already migrating that table.
+
+- **Backwards-compatible migrations only (Expand and Contract).** Never rename or drop columns in a single migration. Add new columns as nullable, deploy, backfill data, then add constraints or drop old columns in a subsequent release. Currently-running production code must continue to work if a deployment fails mid-migration.
+
+- **No fake migration bookkeeping.** When applying schema changes outside your ORM's migration runner (e.g. raw SQL via a one-off CLI command, hot-fixing production), reproduce the runner's bookkeeping faithfully. Most ORMs verify a content checksum on every subsequent migrate run; placeholder values like `'manual-apply'` will pass on insert and then trigger silent drift-detection failures forever after. Compute the real digest (typically SHA-256 of the file contents) and write it to the metadata table the runner owns.
+
 ### Pre-Commit Checks
 
 Before committing any changes, run these checks in order and fix any failures:
