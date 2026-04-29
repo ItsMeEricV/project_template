@@ -35,7 +35,7 @@ Summarize the problem we wish to solve in a few bullet points. Then give an over
 1. All APIs should target a p90 latency of 100 milliseconds.
 2. All PII (Personally Identifiable Information) must be encrypted at rest using AES-256.
 3. The system must support 500 concurrent WebSocket connections.
-4. Carefully design the uniqueness of primary keys. If using a UUID scheme, consider the latest methods like UUIDv7 (time-sortable, better index performance).
+4. Carefully design the uniqueness of primary keys. **Default to UUIDv7** for any UUID primary key — it is time-sortable and gives B-tree locality close to serial integers without giving up global uniqueness. Reach for UUIDv4 only when unguessability dominates and you accept the index-locality cost.
 5. If storing datetime information, default to high-fidelity data types that store both time and timezone information (e.g., `timestamptz` for PostgreSQL).
 
 ### Examples of Bad Requirements
@@ -48,3 +48,17 @@ Break the project down into logical sets of release criteria.
 
 1. **Prototype:** Implement a subset of P0 requirements to test core functionality and feasibility.
 2. **GA (General Availability):** All P0 requirements are complete, tested, and documented.
+
+## Hardening Checklist
+
+A `[x]` / `[ ]` checklist for ongoing technical-debt and operational-hardening items that are not tied to specific release milestones. These outlive Milestones — you will always have new ones.
+
+### Examples
+
+- [ ] **Timezones:** convert all DateTime columns to `timestamptz` with explicit timezone storage.
+- [ ] **Backups:** automated nightly DB snapshots with a quarterly verified restore drill.
+- [ ] **Secrets rotation:** runbook for every secret listed in the env-var table, with an annual rotation cadence.
+- [ ] **Dependency upgrades:** monthly cadence; same-day for security patches.
+- [ ] **Observability:** structured logging with request-ID propagation, error tracking with PII redaction.
+
+Check items off as they ship. Move durable wins (e.g. UUIDv7 conversion, search-index migration) into this section once complete so future contributors can see the project's hardening posture at a glance.
