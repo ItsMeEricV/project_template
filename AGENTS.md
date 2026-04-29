@@ -47,6 +47,8 @@ _Purpose: Define specific roles to prevent 'context bleed' (e.g., a frontend age
 - **Performance:** Design for scalability and efficiency. Every query must be indexed.
 - **Code Style:** Write clear, concise, and idiomatic code. Favor readability over verbosity. Always use `async/await` for asynchronous TypeScript code — do not use raw `.then()` chains.
 - **Accessibility & i18n:** Adhere to WCAG standards and use internationalization for all strings.
+- **Vendor-agnostic naming.** Use generic names for swappable services: `invokeLlm` not `invokeClaude`, `generateEmbedding` not `generateTitanEmbedding`, `sendEmail` not `sendResend`, `uploadObject` not `uploadToS3`. The model / provider / vendor is a configuration detail, not a code contract — keeping the swap painless requires the codebase to never know which vendor is behind the interface.
+- **Refactoring discipline: do not preserve abstractions just because they exist.** When changing a function or module, reason about its actual failure modes before assuming the existing structure is load-bearing. Pre-existing transactions, retries, or wrapper abstractions are often there because they seemed nice at the time, not because removing them breaks anything. "It was already here" is not a reason to keep code.
 ### Error Handling
 
 - **Result Types over Exceptions:** Use a Result type library (e.g., `neverthrow`) to represent operations that can fail. Reserve `try/catch` only for truly exceptional, unrecoverable situations or at system boundaries (e.g., Server Actions that must throw to communicate errors to the framework runtime).
