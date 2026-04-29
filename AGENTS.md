@@ -52,6 +52,17 @@ _Purpose: Define specific roles to prevent 'context bleed' (e.g., a frontend age
 - **Result Types over Exceptions:** Use a Result type library (e.g., `neverthrow`) to represent operations that can fail. Reserve `try/catch` only for truly exceptional, unrecoverable situations or at system boundaries (e.g., Server Actions that must throw to communicate errors to the framework runtime).
 - **No Implicit Fallbacks:** Never silently fall back to session/context data in Server Actions. All identity-related fields (like `userId`, `instructorId`) must be explicitly passed by the caller. This keeps data flow explicit and prevents subtle ownership bugs.
 
+### Security & Logging Hygiene
+
+- **SSRF allowlists: parse the URL, match on the hostname.** Never regex-match the full URL when validating a redirect target or fetch target. Userinfo, query, fragment, and path segments are trivially weaponizable against full-URL regexes.
+
+  - **Good:** `const u = new URL(input); if (!ALLOWED_HOSTS.has(u.hostname)) throw new Error("blocked");`
+  - **Bad:** `if (/trusted\.example/.test(input)) { fetch(input); }` — `https://evil.example?@trusted.example` slips right through.
+
+- **No PII in logs.** Never log emails, auth tokens, passwords, credit-card data, or raw SQL containing user input. Log opaque identifiers (`userId`, `recordingId`, `requestId`) for correlation. Treat every logged field as if it were publicly visible — to anyone with log access, it is.
+
+- **Always log through a logger module, never bare `console.log` / `print`.** A central logger lets you swap transports (CloudWatch, Axiom, Datadog), inject request context (request ID, user ID), and enforce PII redaction in one place. Bare `console.log` bypasses all of that.
+
 ### Database & Migrations
 
 - **Default to UUIDv7 for UUID primary keys.** UUIDv7 embeds a millisecond timestamp prefix, so inserts cluster to the right edge of the B-tree — the same locality property that makes serial integer keys cheap, without giving up global uniqueness. Reach for UUIDv4 only when unguessability dominates and you accept the index-locality cost.
