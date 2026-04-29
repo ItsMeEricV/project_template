@@ -146,7 +146,7 @@ If your project uses Docker for local development:
 
 - **No Shortcuts:** Do not skip accessibility, i18n, or type safety for speed.
 - **No Hardcoding:** Never hardcode strings, colors, or secrets.
-- **No "Bandaids":** Do not use `any` or `ts-ignore`. Address the root cause.
+- **No "Bandaids":** Do not use `any`, `ts-ignore`, `as any`, or `as unknown` casts to silence type errors. Reach for Zod-parsed types, branded types, or type guards first. If a cast is genuinely necessary at a system boundary (e.g. parsing untyped JSON), document the why inline.
 - **No Verbosity:** Avoid unnecessary abstractions or "heavy" boilerplate. Keep it "skinny."
 - **No Sync Bulk Processing:** Never perform unbounded bulk processing inside synchronous API routes; use background workers (e.g., SQS + Lambda, or similar queue-based patterns).
 - **No Database Resets:** Never reset, drop, or wipe the database — not even in development. All schema changes must go through migrations. If data needs to be backfilled or transformed, write a migration or seed script.
