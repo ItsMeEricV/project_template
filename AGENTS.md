@@ -154,3 +154,4 @@ If your project uses Docker for local development:
 - **No Database Resets:** Never reset, drop, or wipe the database — not even in development. All schema changes must go through migrations. If data needs to be backfilled or transformed, write a migration or seed script.
 - **No Unscoped Queries:** Never fetch unbounded data sets (e.g., all records in a table). Always scope queries with filters, pagination, or ownership constraints. Design for production scale from day one.
 - **Security:** Never commit API keys or secrets to source control. Use `.env` files locally and a secrets manager (e.g., VestAuth, Vault, or platform-native env vars) for production.
+- **No New Env Vars Without Justification:** Before adding a new env var, exhaust constants, derived values, and reuse of existing vars. Each new env var increases deployment, rotation, and documentation burden in every environment forever — and one misconfigured environment becomes a silent runtime failure.
