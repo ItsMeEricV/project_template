@@ -141,6 +141,7 @@ If your project uses Docker for local development:
 
 - **Handovers:** When a persona hits a blocker requiring another's expertise, document it in the `IMPLEMENTATION_PLAN.md`.
 - **Intent Sync:** Sync intent between personas before starting cross-boundary tasks.
+- **PR comment attribution.** When more than one AI agent reviews PRs (e.g. Claude + Gemini + Copilot), prepend a bracketed tag to each comment so authors can distinguish them from human reviewers and from each other: `**[CLAUDE]**`, `**[GEMINI]**`, `**[COPILOT]**`. Apply the same convention in inline code-review comments and replies.
 
 ---
 
