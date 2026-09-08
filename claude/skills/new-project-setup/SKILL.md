@@ -43,53 +43,29 @@ Do not pin the Next.js version or force any specific create-next-app prompts —
 
 ORM-specific init runs **after** Q2 (so the install reflects the ORM the user actually chooses):
 
-- Prisma → see the pinning + config-filename steps immediately below; do **not** just run a bare `npm install prisma @prisma/client`
+- Prisma → `bash scripts/install-prisma.sh web` (see below); never a bare `npm install prisma @prisma/client`
 - Drizzle → `cd web && npm install drizzle-orm pg && npm install -D drizzle-kit @types/pg`
 - Kysely / other → install per the user's preference; ask where migrations live
 - No ORM → skip the install entirely
 
-#### Prisma install — pin the version, then fix the config filename
+#### Prisma install — run the script, don't hand-roll it
 
-Two traps, both of which fail *after* a clean-looking install:
+```bash
+bash scripts/install-prisma.sh web          # --provider / --version to override
+```
 
-1. **Pin both packages to the same stable version.** `npm install prisma @prisma/client`
-   resolves the `latest` dist-tag, which Prisma has at times pointed at a
-   pre-release (e.g. `8.0.0-rc.13` while `7.10.0` was the stable line). Worse,
-   the two packages can resolve differently and leave you with an RC CLI driving
-   a stable client. Check the tags, then pin explicitly:
-
-   ```bash
-   npm view prisma dist-tags          # is `latest` an -rc/-dev/-beta? then use `prev`
-   cd web && npm install prisma@<x.y.z> @prisma/client@<x.y.z>
-   node -e "console.log(require('./node_modules/prisma/package.json').version, require('./node_modules/@prisma/client/package.json').version)"
-   ```
-
-   The version check is the point — the two printed versions must match. A
-   mismatch also changes the CLI surface: `prisma init --datasource-provider`
-   exists on 7.x and is gone on the 8.x RC, so a scaffold command that "should"
-   work fails with `No flag registered for --datasource-provider`.
-
-2. **Rename the generated config to `prisma.config.ts`.** Prisma 7 writes
-   `prisma7.config.ts` (a transitional name so it can coexist with an older
-   config), but `web/Dockerfile.dev` does `COPY prisma.config.ts ./` — the image
-   build fails on the missing file. Prisma reads `prisma.config.ts` fine, so
-   just rename it. The generated config also does `import "dotenv/config"`, so
-   `dotenv` must be installed or every CLI invocation dies at import.
-
-   ```bash
-   cd web && npx prisma init --datasource-provider postgresql --no-skills
-   mv prisma7.config.ts prisma.config.ts
-   npm install -D dotenv
-   DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma validate
-   ```
-
-   `prisma validate` is the cheap confirmation that the rename took: it prints
-   `Loaded Prisma config from prisma.config.ts.`
+A bare `npm install prisma @prisma/client && npx prisma init` produces a broken
+setup: `latest` is periodically a pre-release, the CLI and client can land on
+different majors, and Prisma 7 writes `prisma7.config.ts` while
+`web/Dockerfile.dev` copies `prisma.config.ts`. The script pins both packages to
+the highest stable version, scaffolds the schema, normalizes the config
+filename, declares `dotenv` if the config imports it, and fails loudly if any of
+that didn't hold. It is idempotent — re-run it any time to re-assert the checks.
 
 `prisma migrate deploy` (the `Dockerfile.dev` CMD) connects *before* it checks
-for migrations, so it needs a reachable database — it will fail on the host
-until infra is up, and exits 0 with `No migration found in prisma/migrations`
-once it can connect. That's expected on a fresh project with no models.
+for migrations, so it fails on the host until infra is up, and exits 0 with
+`No migration found in prisma/migrations` once it can connect. Expected on a
+fresh project with no models.
 
 ### Q1: Project slug + host-port collision (BLOCKING)
 
@@ -220,7 +196,7 @@ State the rule to the user and follow it for the rest of setup: **every environm
 | Forgot ngrok target port                                        | ngrok's `host.docker.internal:3000` only forwards to the worktree publishing `WEB_PORT=3000`. Document which worktree that is.                                                                                          |
 | Picked a db / `WEB_PORT` / `STUDIO_PORT` by hand or RNG         | May already be bound → `up` fails (`bind: address already in use`). Use `scripts/next-free-port.sh <start>` for the next free port; re-run per worktree. |
 | Trusted a "free" port while other projects were spun down       | `compose down` removes containers, so neither `docker ps -a` nor `lsof` sees the port another project owns. The reservation scan (check 3) prevents this; don't pass `--no-scan` to make an inconvenient answer go away. |
-| Installed Prisma without pinning, or kept `prisma7.config.ts`   | `latest` can be a pre-release, and CLI/client can resolve to different majors; `Dockerfile.dev` copies `prisma.config.ts`. See the Prisma sub-section under Q0. |
+| Hand-rolled the Prisma install instead of running the script    | `latest` can be a pre-release, CLI/client can land on different majors, and `Dockerfile.dev` copies `prisma.config.ts`, not `prisma7.config.ts`. Run `scripts/install-prisma.sh`. |
 | Edited `.env.docker.example` instead of `.env.docker`           | `.example` is the source of truth for which vars _exist_; the real one is per-worktree, gitignored, and is what Compose actually reads.                                                                                 |
 | Ran infra `up` without `--env-file .env.docker`                 | `COMPOSE_PROFILES=ngrok` in `.env.docker` is silently ignored without the flag, so ngrok stays disabled even when the user thought they enabled it. (Pass `-p <slug>-infra` too — see next row.)                          |
 | Brought infra `up`/`down` without `-p <slug>-infra`             | Infra gets absorbed into the worktree's group (via the `COMPOSE_PROJECT_NAME` `--env-file` injects) and the data volume is renamed per-worktree. Always pass **both** `-p <slug>-infra` and `--env-file`. |
