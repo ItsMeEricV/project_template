@@ -82,10 +82,15 @@ _Note: If your project uses a monorepo or subdirectory structure, ensure you run
 
 ### Memory Management
 
-- **Persistence:** After completing a major feature or resolving a complex bug, reflect on the session and update `MEMORY.md`.
-- **Criteria:** Record discoveries that aren't obvious from the code (API quirks, required command sequences, "I struggled" signals).
-- **Compaction:** Summarize findings into "Lessons Learned" or "Project Context." Do not append raw logs.
-- **Validation:** Present proposed memory updates to the user for approval.
+Durable context lives in three places. Route by **audience**, not by recency:
+
+- **Stable engineering rules** — true for everyone, indefinitely → `AGENTS.md`. ("Never regex-match a URL for an SSRF allowlist.")
+- **Repo-scoped quirks a teammate or a different agent would trip over** → `MEMORY.md`. It is version-controlled and vendor-neutral; humans, Claude, Gemini, and Codex all read it.
+- **Per-user preferences and cross-project working style** → the agent's own memory store (e.g. Claude Code's auto-memory under `~/.claude/projects/<slug>/memory/`). Machine-local and agent-specific — never mirror it into the repo, and never put repo facts only there, where other agents and teammates cannot see them.
+
+- **Write on discovery, not on a schedule.** Record a fact the moment it costs time. Post-feature "reflect on the session" rituals produce bloat, not signal.
+- **Criteria:** not derivable from the code, and would cost the next person real time. If git blame or the code itself answers it, skip it.
+- **Compaction:** Summarize into the existing entry. Never append raw logs, and never add a second bullet restating the first.
 
 ### Testing & Quality
 
