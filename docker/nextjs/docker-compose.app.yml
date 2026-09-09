@@ -29,13 +29,31 @@ services:
     # The shared db is in a different compose project, so `depends_on` can't
     # see it — pg_isready loops until the db accepts connections, then runs
     # the create-if-missing query.
+    #
+    # Every step narrates itself. Left bare, this container's whole log output
+    # is the single line "CREATE DATABASE" (psql echoing a command tag), and it
+    # then sits in `docker ps -a` as a stopped container with no indication that
+    # stopping is the point — which reads exactly like a crash.
     command:
       - sh
       - -c
       - |
+        say() { echo "[db-init] $$1"; }
+        say "one-shot setup job: make sure this worktree's database exists, then exit."
+        say "a STOPPED db-init with exit code 0 is the SUCCESS state, not a failure --"
+        say "web and studio are gated on it via depends_on: service_completed_successfully."
+        say "target: database '$$WORKTREE_DB' on the shared postgres at db:5432"
+        say "waiting for the shared postgres to accept connections..."
         until pg_isready -h db -U postgres -q; do sleep 1; done
-        psql -h db -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$$WORKTREE_DB'" | grep -q 1 \
-          || psql -h db -U postgres -c "CREATE DATABASE \"$$WORKTREE_DB\""
+        say "postgres is accepting connections."
+        if psql -h db -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$$WORKTREE_DB'" | grep -q 1; then
+          say "database '$$WORKTREE_DB' already exists -- nothing to do."
+        else
+          say "database '$$WORKTREE_DB' not found -- creating it."
+          psql -h db -U postgres -q -c "CREATE DATABASE \"$$WORKTREE_DB\"" >/dev/null
+          say "created database '$$WORKTREE_DB'."
+        fi
+        say "done. exiting 0 -- this container is meant to stay stopped until the next up."
     restart: 'no'
     deploy:
       resources:
