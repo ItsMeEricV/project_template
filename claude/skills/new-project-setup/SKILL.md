@@ -26,7 +26,8 @@ It also covers two bootstrap concerns outside `docker/`: how many deploy environ
 | "The user said 'just set up Docker'"                      | "Set up Docker" still means "ask the substitution questions." A user-friendly skill that asks two questions beats a one-shot that ships wrong defaults. |
 | "I'll just add the env var I need to `process.env`"       | Every env var goes in the `environment.ts` Zod schema AND gets surfaced to the user. Silent `process.env.FOO` reads are the exact problem Q7 prevents.   |
 | "I'll just collapse this to dev + prod, simpler"          | Number of environments is the user's call (Q6). Default is dev + preview + prod (preview → preview) to match Vercel's lanes; only drop the preview lane if they ask. |
-| "I'll just use 5433 / 3001 for the port"                  | That guess may already be bound → `up` dies on `bind: address already in use`. Never pick ports by hand or RNG; run `scripts/next-free-port.sh <start>` (Q1), which scans `docker ps -a` + host sockets for the next free one. |
+| "I'll just use 5433 / 3001 for the port"                  | That guess may already be bound → `up` dies on `bind: address already in use`. Never pick ports by hand or RNG; run `scripts/next-free-port.sh <start>` (Q1). |
+| "`lsof` says the port is free, so it's free"              | Only true for what is running *right now*. A project torn down with `compose down` has no container and holds no socket, but reclaims its port the moment it comes back. The script's on-disk reservation scan is what catches those. |
 
 ## Workflow
 
@@ -42,22 +43,48 @@ Do not pin the Next.js version or force any specific create-next-app prompts —
 
 ORM-specific init runs **after** Q2 (so the install reflects the ORM the user actually chooses):
 
-- Prisma → `cd web && npm install prisma @prisma/client && npx prisma init`
+- Prisma → `bash scripts/install-prisma.sh web` (see below); never a bare `npm install prisma @prisma/client`
 - Drizzle → `cd web && npm install drizzle-orm pg && npm install -D drizzle-kit @types/pg`
 - Kysely / other → install per the user's preference; ask where migrations live
 - No ORM → skip the install entirely
+
+#### Prisma install — run the script, don't hand-roll it
+
+```bash
+bash scripts/install-prisma.sh web          # --provider / --version to override
+```
+
+A bare `npm install prisma @prisma/client && npx prisma init` produces a broken
+setup: `latest` is periodically a pre-release, the CLI and client can land on
+different majors, and Prisma 7 writes `prisma7.config.ts` while
+`web/Dockerfile.dev` copies `prisma.config.ts`. The script pins both packages to
+the highest stable version, scaffolds the schema, normalizes the config
+filename, declares `dotenv` if the config imports it, and fails loudly if any of
+that didn't hold. It is idempotent — re-run it any time to re-assert the checks.
+
+`prisma migrate deploy` (the `Dockerfile.dev` CMD) connects *before* it checks
+for migrations, so it fails on the host until infra is up, and exits 0 with
+`No migration found in prisma/migrations` once it can connect. Expected on a
+fresh project with no models.
 
 ### Q1: Project slug + host-port collision (BLOCKING)
 
 Ask: _"What's the project slug? It namespaces the shared Docker network, the db container name, and per-worktree containers — needed to avoid collisions with other projects on this machine. Lowercase, hyphen- or underscore-separated. Example: `taskbird`, `analytics_pipeline`."_
 
-Then assign the db's **host** port — **scan, don't guess.** 5432 may already be held by a stale container or another project, and the stack dies on `bind: address already in use`. This skill's helper prints the lowest free port ≥ the start, skipping every Docker-published port (`docker ps -a`) and host-bound socket:
+Then assign the db's **host** port — **scan, don't guess.** 5432 may already be held by a stale container or another project, and the stack dies on `bind: address already in use`. This skill's helper prints the lowest port ≥ the start that clears all three checks:
+
+1. not published by a container that still exists (`docker ps -a` — running or stopped),
+2. not bound by a listening process on the host,
+3. not **reserved on disk** by another project — a `WEB_PORT`/`STUDIO_PORT` in some other `.env.docker`, or a hardcoded published port in a compose file.
 
 ```bash
 bash scripts/next-free-port.sh 5432
+bash scripts/next-free-port.sh 3000 1 -v   # -v explains every port it skips
 ```
 
-Use what it prints (5432 if free) and tell the user. Only the host side moves; the container always listens on 5432.
+Check 3 is the one that looks skippable and isn't. `docker compose down` **deletes** a project's containers, so a spun-down project is invisible to checks 1 and 2 while still fully intending to bind its port the next time it starts. Giving that port to a new project doesn't avoid the collision — it defers it onto whichever project comes up second, at which point the cause is much harder to see.
+
+The scan defaults to `$HOME/code`; pass `--roots ~/work,~/src` for a different workspace layout, or `--no-scan` to skip it. Use what it prints (5432 if free) and tell the user. Only the host side moves; the container always listens on 5432.
 
 Substitutions:
 
@@ -168,6 +195,8 @@ State the rule to the user and follow it for the rest of setup: **every environm
 | Skipped Q4 and added an extension later                         | `down -v` + image rebuild = volume loss. Bring this up at bootstrap.                                                                                                                                                    |
 | Forgot ngrok target port                                        | ngrok's `host.docker.internal:3000` only forwards to the worktree publishing `WEB_PORT=3000`. Document which worktree that is.                                                                                          |
 | Picked a db / `WEB_PORT` / `STUDIO_PORT` by hand or RNG         | May already be bound → `up` fails (`bind: address already in use`). Use `scripts/next-free-port.sh <start>` for the next free port; re-run per worktree. |
+| Trusted a "free" port while other projects were spun down       | `compose down` removes containers, so neither `docker ps -a` nor `lsof` sees the port another project owns. The reservation scan (check 3) prevents this; don't pass `--no-scan` to make an inconvenient answer go away. |
+| Hand-rolled the Prisma install instead of running the script    | `latest` can be a pre-release, CLI/client can land on different majors, and `Dockerfile.dev` copies `prisma.config.ts`, not `prisma7.config.ts`. Run `scripts/install-prisma.sh`. |
 | Edited `.env.docker.example` instead of `.env.docker`           | `.example` is the source of truth for which vars _exist_; the real one is per-worktree, gitignored, and is what Compose actually reads.                                                                                 |
 | Ran infra `up` without `--env-file .env.docker`                 | `COMPOSE_PROFILES=ngrok` in `.env.docker` is silently ignored without the flag, so ngrok stays disabled even when the user thought they enabled it. (Pass `-p <slug>-infra` too — see next row.)                          |
 | Brought infra `up`/`down` without `-p <slug>-infra`             | Infra gets absorbed into the worktree's group (via the `COMPOSE_PROJECT_NAME` `--env-file` injects) and the data volume is renamed per-worktree. Always pass **both** `-p <slug>-infra` and `--env-file`. |

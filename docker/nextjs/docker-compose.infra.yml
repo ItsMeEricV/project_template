@@ -39,7 +39,15 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=app_dev
     volumes:
-      - app_postgres_data:/var/lib/postgresql/data
+      # Mount the PARENT dir, not .../data. PG18+ images store the cluster in a
+      # major-version subdirectory (/var/lib/postgresql/18/docker) so
+      # `pg_upgrade --link` never crosses a mount boundary, and the entrypoint
+      # hard-aborts when it finds a mount at the old PG<=17 path:
+      #   Error: ... there appears to be PostgreSQL data in:
+      #     /var/lib/postgresql/data (unused mount/volume)
+      # The db then exits 1 on every `up` and the app stack's db-init spins
+      # forever on pg_isready. See docker-library/postgres#1259.
+      - app_postgres_data:/var/lib/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
