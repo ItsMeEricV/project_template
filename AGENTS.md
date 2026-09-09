@@ -82,10 +82,15 @@ _Note: If your project uses a monorepo or subdirectory structure, ensure you run
 
 ### Memory Management
 
-- **Persistence:** After completing a major feature or resolving a complex bug, reflect on the session and update `MEMORY.md`.
-- **Criteria:** Record discoveries that aren't obvious from the code (API quirks, required command sequences, "I struggled" signals).
-- **Compaction:** Summarize findings into "Lessons Learned" or "Project Context." Do not append raw logs.
-- **Validation:** Present proposed memory updates to the user for approval.
+Durable context lives in three places. Route by **audience**, not by recency:
+
+- **Stable engineering rules** — true for everyone, indefinitely → `AGENTS.md`. ("Never regex-match a URL for an SSRF allowlist.")
+- **Repo-scoped quirks a teammate or a different agent would trip over** → `MEMORY.md`. It is version-controlled and vendor-neutral; humans, Claude, Gemini, and Codex all read it.
+- **Per-user preferences and cross-project working style** → the agent's own memory store (e.g. Claude Code's auto-memory under `~/.claude/projects/<slug>/memory/`). Machine-local and agent-specific — never mirror it into the repo, and never put repo facts only there, where other agents and teammates cannot see them.
+
+- **Write on discovery, not on a schedule.** Record a fact the moment it costs time. Post-feature "reflect on the session" rituals produce bloat, not signal.
+- **Criteria:** not derivable from the code, and would cost the next person real time. If git blame or the code itself answers it, skip it.
+- **Compaction:** Summarize into the existing entry. Never append raw logs, and never add a second bullet restating the first.
 
 ### Testing & Quality
 
@@ -118,7 +123,7 @@ If your project uses Docker for local development:
 
 ### Inter-Agent Communication
 
-- **Handovers across sessions or agents:** When a task spans multiple sessions, or when one agent hits a blocker that needs another agent's expertise, document the state in `IMPLEMENTATION_PLAN.md` so the next agent can pick up without re-deriving context.
+- **Handovers across sessions or agents:** Use the agent's own planning mode for multi-step work, and the `handoff` skill when a task outruns one session or hits a blocker needing another agent's expertise. Do not commit a plan or handoff markdown file to the repo — plans go stale the moment the approach changes, and a stale committed plan misleads every agent that reads it. Work that must outlive the handoff belongs in the task tracker, not in a file.
 - **Second-opinion reviews:** for a non-Claude review of code, a PR, or an architecture decision, invoke the `agent-code-reviewer` skill (wraps `cli/agent_code_reviewer.py`). The skill encodes when a second opinion earns its token cost, how to pick a model from the roster in `cli/agent_reviewer.toml` (`--list` shows what is available and which API keys are set), and how to weight the reviewer's output against your own conviction. The script gives feedback only — it never writes code.
 - **PR comment attribution.** When more than one AI agent reviews PRs (e.g. Claude + Gemini + Copilot), prepend a bracketed tag to each comment so authors can distinguish them from human reviewers and from each other: `**[CLAUDE]**`, `**[GEMINI]**`, `**[COPILOT]**`. Apply the same convention in inline code-review comments and replies. Tags posted by `cli/agent_code_reviewer.py` come from the reviewing model's `tag` in `cli/agent_reviewer.toml`, defaulting to its roster key upper-cased — set `tag` explicitly there rather than letting a key chosen for typing comfort become a public label.
 

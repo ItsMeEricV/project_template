@@ -24,8 +24,9 @@ The contract between you, your project, and any agent working on it. Keep these 
 2. **`ARCHITECTURE.md`** — **The "Where."** Tech stack, directory structure, system flow.
 3. **`AGENTS.md`** — **The "How."** Engineering standards, anti-patterns, git workflow. The single source of truth for technical rules.
 4. **`KNOWLEDGE.md`** — **The "Vocabulary."** Domain glossary and shared understandings. Keeps the codebase, docs, and conversation using the same words for the same things.
-5. **`MEMORY.md`** — **The "Journal."** Agent-maintained record of quirks, bugs, and patterns. Prevents repeating past mistakes.
-6. **`IMPLEMENTATION_PLAN.md`** — **The "When."** Living task tracker and inter-agent handoff doc. Created when execution starts.
+5. **`MEMORY.md`** — **The "Journal."** Agent-maintained record of repo-scoped quirks, bugs, and patterns. Prevents repeating past mistakes. Version-controlled and vendor-neutral, so it reaches teammates and every agent — unlike an agent's own private memory store, which holds per-user preferences and stays out of the repo.
+
+Work in flight is deliberately **not** on the shelf: plans live in the agent's planning mode, session handoffs in the `handoff` skill, and outstanding tasks in your issue tracker (GitHub Issues, Linear). A committed markdown checklist drifts from reality the moment the approach changes, and every agent that reads it inherits the drift.
 
 Two thin per-agent files (`CLAUDE.md`, `GEMINI.md`) point each tool at `AGENTS.md` so the rules stay in one place. `CLAUDE.md` opens with an `@AGENTS.md` import, because Claude Code reads `CLAUDE.md` and **not** `AGENTS.md` — without the import the rules never reach the context window. `pi` and Codex read `AGENTS.md` natively and need no pointer.
 
@@ -210,8 +211,7 @@ See `cli/README.md` for script-authoring conventions.
 
 - **`AGENTS.md`** ensures the rules of engagement are explicit.
 - **`KNOWLEDGE.md`** ensures everyone uses the same words for the same things.
-- **`MEMORY.md`** ensures hard-earned context isn't lost between sessions.
-- **`IMPLEMENTATION_PLAN.md`** ensures complex tasks are broken down and dependencies are respected.
+- **`MEMORY.md`** ensures hard-earned context isn't lost between sessions — or siloed inside one agent's private memory.
 - **The skill bundle** ensures repeatable workflows don't drift from session to session.
 
 Use the "Good/Bad" examples within the template as a guide for your own documentation.

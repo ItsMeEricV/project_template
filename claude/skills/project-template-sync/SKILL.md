@@ -17,16 +17,15 @@ Back-port abstracted lessons from a working project into the master template at 
 
 ## Files in Scope
 
-| Source in working project                        | Template counterpart      | Action                                                                  |
-| ------------------------------------------------ | ------------------------- | ----------------------------------------------------------------------- |
-| `AGENTS.md`                                      | `AGENTS.md`               | Sync abstracted rules. Hard cap 200 lines.                              |
-| `ARCHITECTURE.md`                                | `ARCHITECTURE.md`         | Sync structural patterns. Drop concrete service names and diagrams.     |
-| `SPEC.md`                                        | `SPEC.md`                 | Sync requirement-writing pedagogy only, not the actual requirements.    |
-| `KNOWLEDGE.md`                                   | `KNOWLEDGE.md`            | Sync glossary-writing pedagogy only, never the actual domain terms.     |
-| `README.md`                                      | `README.md`               | Sync only if onboarding pedagogy changed.                                |
-| `CLAUDE.md` / `GEMINI.md`                        | `CLAUDE.md` / `GEMINI.md` | Hand-curated stable rules. Sync only structural / pedagogical changes.  |
-| Auto-memory dir `~/.claude/projects/<slug>/memory/` | `MEMORY.md`            | Distill recurring **patterns** as index entries. Never dump raw feedback. |
-| `IMPLEMENTATION_PLAN.md`                         | (none)                    | **SKIP — per-project WIP, never templated.**                            |
+| Source in working project                           | Template counterpart      | Action                                                                    |
+| --------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------- |
+| `AGENTS.md`                                         | `AGENTS.md`               | Sync abstracted rules. Hard cap 200 lines.                                |
+| `ARCHITECTURE.md`                                   | `ARCHITECTURE.md`         | Sync structural patterns. Drop concrete service names and diagrams.       |
+| `SPEC.md`                                           | `SPEC.md`                 | Sync requirement-writing pedagogy only, not the actual requirements.      |
+| `KNOWLEDGE.md`                                      | `KNOWLEDGE.md`            | Sync glossary-writing pedagogy only, never the actual domain terms.       |
+| `README.md`                                         | `README.md`               | Sync only if onboarding pedagogy changed.                                 |
+| `CLAUDE.md` / `GEMINI.md`                           | `CLAUDE.md` / `GEMINI.md` | Hand-curated stable rules. Sync only structural / pedagogical changes.    |
+| Auto-memory dir `~/.claude/projects/<slug>/memory/` | `MEMORY.md`               | Distill recurring **patterns** as index entries. Never dump raw feedback. |
 
 `<slug>` is Claude Code's encoding of the project path (e.g. `-Users-eric-code-fitness-tracker`).
 
@@ -43,7 +42,7 @@ The template's prompt shelf has three roles. Don't conflate them.
 - Hard cap 200 lines. Past ~200 lines, instruction-following degrades measurably.
 - **Match the file's existing format.** The template's stub MEMORY.md uses inline summary bullets (`- **Example:** The staging database requires an SSH tunnel on port 5433.`). The user's auto-memory MEMORY.md at `~/.claude/projects/<slug>/memory/MEMORY.md` uses link-out index entries (`- [feedback_foo.md](feedback_foo.md) — one-liner`). **Both are valid.** When syncing, follow whatever convention the destination file already uses; do not silently flip styles. If a format migration is genuinely warranted, do it as a separate, dedicated PR.
 - Treat auto-memory as a **hint, not gospel** — verify every recalled claim (path, function name, flag) against the current code before recommending it. Anthropic's own design tells the agent to do this; the skill must too.
-- If a feedback file captures a **stable engineering rule** ("never regex-match URLs for SSRF allowlists, parse the hostname"), it belongs in **AGENTS.md**, not MEMORY.md. MEMORY is reserved for *recent / active / project-current* context.
+- If a feedback file captures a **stable engineering rule** ("never regex-match URLs for SSRF allowlists, parse the hostname"), it belongs in **AGENTS.md**, not MEMORY.md. MEMORY is reserved for _recent / active / project-current_ context.
 - If a feedback entry is **personal preference** ("user prefers Dialog over Sheet"), it stays in personal auto-memory and does **not** sync to the template.
 - **Duplication with personal global `~/.claude/CLAUDE.md` is expected and OK.** The template stands alone for forks — every rule that should hold in a fresh fork must live in the template, even if it's also in your personal global rules. Don't suppress a transferable rule just because your personal CLAUDE.md already has it.
 
@@ -51,9 +50,9 @@ The template's prompt shelf has three roles. Don't conflate them.
 
 `KNOWLEDGE.md` is a downstream project's domain glossary — by design it is **almost entirely project-specific nouns**. You cannot port a project's actual glossary entries; they would fail the abstraction filter on every line.
 
-What you **can** sync is the *pedagogy* — the same way `SPEC.md` syncs requirement-writing technique, not the requirements:
+What you **can** sync is the _pedagogy_ — the same way `SPEC.md` syncs requirement-writing technique, not the requirements:
 
-- The template's `KNOWLEDGE.md` is an instructional stub: it teaches *how to write a good glossary* (canonical term + _Avoid_ aliases, flagged-ambiguities section, example dialogue, the single- vs multi-area `KNOWLEDGE-MAP.md` split).
+- The template's `KNOWLEDGE.md` is an instructional stub: it teaches _how to write a good glossary_ (canonical term + _Avoid_ aliases, flagged-ambiguities section, example dialogue, the single- vs multi-area `KNOWLEDGE-MAP.md` split).
 - Sync only when the **glossary-writing guidance itself** has improved — e.g. a downstream project found a clearer way to structure flagged ambiguities, or the `deep-discuss` skill changed how it expects `KNOWLEDGE.md` to be laid out.
 - **Never** copy a downstream project's domain terms (Order, Invoice, Customer, or whatever that project's real nouns are) into the template. The worked-example terms in the stub are deliberately generic placeholders.
 - Keep `KNOWLEDGE.md` and the `deep-discuss` skill's `KNOWLEDGE-FORMAT.md` consistent — if one changes how a glossary entry is formatted, the other must match.
@@ -65,7 +64,7 @@ Run every candidate change through these four steps before writing:
 1. **Strip project nouns.** Remove product names, table names, route paths, vendor URLs, internal domain terminology.
 2. **Find the why.** What general engineering concern motivated this rule? Tag the rule by that concern, not by the symptom.
 3. **Vendor-neutralize.** If the lesson holds across vendors, write it generically and mention specifics only parenthetically: "(e.g. Prisma, Drizzle, Sequelize)".
-4. **Preserve pedagogy.** New sections must follow the template's existing *Good Example / Bad Example / Why* pattern. Flat prose without examples is rejected and must be revised before commit.
+4. **Preserve pedagogy.** New sections must follow the template's existing _Good Example / Bad Example / Why_ pattern. Flat prose without examples is rejected and must be revised before commit.
 5. **Extract before discarding.** Before dropping a war story, debugging log, or session narrative as "raw log — not template material," scan it for a transferable engineering rule hiding inside. A 4-hour `Symbol.toStringTag` debugging story may carry a real rule ("server actions must return JSON-serializable values"). Port the underlying rule as its own AGENTS.md entry with Good/Bad examples; drop the narrative. Never let a generalizable lesson die just because its packaging was a story.
 
 ### Worked transformations
@@ -107,14 +106,14 @@ Drop these outright even when they look general:
 - Project file paths (`web/`, `cli/worktree-init.sh`, `infra/envs/dev.tfvars`)
 - Specific env-var names (`AUTH_BYPASS_SECRET`, `NGROK_TUNNEL_URL`)
 - Vendor-locked lessons that don't generalize without rewrite (e.g. "Vercel preview-lane uses `VERCEL_ENV`") — port only if rewritten as "your platform's preview-detection signal."
-- Personal preferences captured in auto-memory ("user prefers X over Y") — these belong in *personal* auto-memory, not the master template.
+- Personal preferences captured in auto-memory ("user prefers X over Y") — these belong in _personal_ auto-memory, not the master template.
 
 ## Diff Classification (mandatory triage step)
 
 Before editing, present a triage table to the user and wait for approval. One row per candidate change:
 
-| Section / rule | Class                                                | Proposed action       |
-| -------------- | ---------------------------------------------------- | --------------------- |
+| Section / rule | Class                                                   | Proposed action                  |
+| -------------- | ------------------------------------------------------- | -------------------------------- |
 | <name>         | additive · replacement · cosmetic · project-only · drop | append / rewrite / skip / delete |
 
 Definitions:
@@ -126,13 +125,13 @@ Definitions:
 
 ## Size Budgets
 
-| File              | Hard ceiling | Soft target              |
-| ----------------- | ------------ | ------------------------ |
-| `AGENTS.md`       | 200 lines    | ≤150 lines               |
-| `MEMORY.md`       | 200 lines    | ≤100 lines (index only)  |
-| `ARCHITECTURE.md` | 200 lines    | ≤150 lines               |
-| `SPEC.md`         | 100 lines    | ≤80 lines                |
-| `KNOWLEDGE.md`    | 100 lines    | ≤80 lines (stub only)    |
+| File              | Hard ceiling | Soft target             |
+| ----------------- | ------------ | ----------------------- |
+| `AGENTS.md`       | 200 lines    | ≤150 lines              |
+| `MEMORY.md`       | 200 lines    | ≤100 lines (index only) |
+| `ARCHITECTURE.md` | 200 lines    | ≤150 lines              |
+| `SPEC.md`         | 100 lines    | ≤80 lines               |
+| `KNOWLEDGE.md`    | 100 lines    | ≤80 lines (stub only)   |
 
 If a planned change blows the ceiling, prefer in order: (a) merge with adjacent rule, (b) demote detail to a one-line `*Why:*` blurb, (c) move into a referenced doc and link from the template.
 
